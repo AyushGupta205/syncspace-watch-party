@@ -175,12 +175,12 @@ SyncSpace integrates a lightweight SQLite storage layer (`server/db.js` using No
 
 ## Scalability & Redis Multi-Instance Roadmap
 
-`npm run load-test -- 100` runs a local, repeatable Socket.IO load check and reports connection/join latency, room-wide playback delivery latency, and server counters. On the current workstation, a 250-client room joined in 1.13 seconds (122 ms p95 per-client join latency) with 13 ms p95 playback delivery. A 1,000-client room joined in 13.18 seconds (572 ms p95 per-client join latency) with 31 ms p95 playback delivery. These process-level in-memory results do not represent a Render deployment or multi-instance capacity. When scaling horizontally across multiple cloud instances or container replicas:
+`npm run load-test -- 100` runs a local, repeatable Socket.IO load check and reports connection/join latency, room-wide playback delivery latency, and server counters. In recorded runs on this workstation, a 250-client room joined in 1.13 seconds (121 ms p95 join acknowledgement) with 12.38 ms p95 room-wide playback delivery. A 1,000-client room joined in 13.18 seconds (572 ms p95 join acknowledgement) with 30.61 ms p95 room-wide playback delivery. These process-level in-memory results do not represent a Render deployment or multi-instance capacity. When scaling horizontally across multiple cloud instances or container replicas:
 
 ```text
                ┌─────────────────────────────────────┐
                │         Load Balancer / Proxy       │
-               │   (Sticky Sessions by Client IP)    │
+               │ Cookie affinity (if polling enabled)│
                └───────────┬──────────────┬──────────┘
                            │              │
              ┌─────────────▼─┐          ┌─▼─────────────┐
@@ -215,7 +215,7 @@ SyncSpace integrates a lightweight SQLite storage layer (`server/db.js` using No
      console.log('Socket.IO Redis adapter enabled for multi-instance clustering.');
    }
    ```
-3. Configure your cloud load balancer (e.g. AWS ALB, NGINX, Cloudflare) with **Sticky Sessions** (Session Affinity via cookie or IP) to ensure WebSocket upgrade handshakes land on the same server instance.
+3. When Socket.IO's HTTP long-polling transport is enabled, configure cookie-based session affinity on the load balancer so all requests for a connection reach the same instance; avoid relying on client-IP affinity where possible. WebSocket-only connections do not need polling request affinity, but reconnects can still land on another instance. In either case, shared room/session state and cross-instance event fanout are required for correct multi-instance behavior.
 
 > This is a future scale-out design, not an implemented mode. The current app keeps room ownership and SQLite state in one process. A Redis Socket.IO adapter alone is insufficient: room state and session ownership must also move to shared storage before running multiple app instances.
 
