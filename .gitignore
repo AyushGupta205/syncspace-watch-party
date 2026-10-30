@@ -1,0 +1,17 @@
+node_modules/
+dist/
+scratch/
+.npm-cache/
+data/*.db
+data/*.db-wal
+data/*.db-shm
+test-results/
+playwright-report/
+.env
+.env.*
+!.env.example
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
